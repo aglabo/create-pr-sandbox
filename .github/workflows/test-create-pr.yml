@@ -17,8 +17,8 @@
 name: "[E2E]Test create-pr Action"
 
 permissions:
-  contents: read
-  pull-requests: write # Required for creating PRs via GitHub API
+  contents: write # Required for git push operations (step 4)
+  pull-requests: write # Required for creating/updating PRs via gh CLI
 
 on:
   workflow_dispatch:
@@ -28,9 +28,13 @@ jobs:
     name: Test create-pr-from-worktree action
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout repository
+        id: checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
@@ -49,6 +53,7 @@ jobs:
             echo "PR_BRANCH=${pr_branch}"
             echo "LABELS=test,automated,integration-test"
             echo "MERGE_METHOD=never"
+            echo "worktree-dir=.worktree/work-temp"
           } >> "$GITHUB_OUTPUT"
 
           # PR body with timestamp to verify updates
@@ -86,13 +91,14 @@ jobs:
 
       - name: create worktree for pr
         run: |
-          git worktree add -B ${{ steps.vars.outputs.PR_BRANCH }} .worktree/work-temp
-          cd .worktree/work-temp
+          git worktree add -B ${{ steps.vars.outputs.PR_BRANCH }} ${{ steps.vars.outputs.worktree-dir }}
 
       - name: add file for pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # goto worktree directory
-          cd .worktree/work-temp
+          cd ${{ steps.vars.outputs.worktree-dir }}
 
           # add user signature for commit
           git config --local user.name "github-actions[bot]"
@@ -104,6 +110,8 @@ jobs:
 
 
           # commit and push changes
+          gh auth status
+
           git add test-create-pr.sh
           git commit -m "test: add test-create-pr.sh for create-pr-from-worktree action test"
           git push origin ${{ steps.vars.outputs.PR_BRANCH }}
@@ -114,11 +122,11 @@ jobs:
         with:
           pr-title: ${{ steps.vars.outputs.PR_TITLE }}
           pr-body: ${{ steps.vars.outputs.PR_BODY }}
-          base-branch: ${{ steps.vars.outputs.BASE_BRANCH }}
+          pr-branch: ${{ steps.vars.outputs.PR_BRANCH }}
           labels: ${{ steps.vars.outputs.LABELS }}
           merge-method: ${{ steps.vars.outputs.MERGE_METHOD }}
 
       - name: cleanup worktree
         if: always()
         run: |
-          git worktree remove .worktree/work-temp || true
+          git worktree remove ${{ steps.vars.outputs.worktree-dir }} --force
