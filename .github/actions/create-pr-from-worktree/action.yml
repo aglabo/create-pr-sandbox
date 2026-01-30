@@ -119,10 +119,6 @@ runs:
         BASE_BRANCH="${{ steps.detect.outputs.base-branch }}"
         PR_BRANCH="${{ inputs.pr-branch }}"
 
-        echo  "--- git status ---"
-        git status
-        echo  "--- git status ---"
-
         # Check if PR already exists from head branch to base branch
         # Timeout after 30 seconds
         if ! EXISTING_PR=$(timeout 30s gh pr list --head "$PR_BRANCH" --base "$BASE_BRANCH" --json number --jq '.[0].number' 2>&1); then
@@ -171,10 +167,10 @@ runs:
 
           # Create PR with timeout (60 seconds for creation)
           if ! PR_URL=$(timeout 60s gh pr create \
-            --base "$BASE_BRANCH" \
-            --head "$HEAD_BRANCH" \
-            --title "${{ inputs.pr-title }}" \
-            --body "${{ inputs.pr-body }}" 2>&1); then
+            --base $BASE_BRANCH \
+            --head $HEAD_BRANCH \
+            --title '${{ inputs.pr-title }}' \
+            --body '${{ inputs.pr-body }}' 2>&1); then
             EXIT_CODE=$?
             if [ $EXIT_CODE -eq 124 ]; then
               echo "::error::GitHub API call (gh pr create) timed out after 60 seconds"
