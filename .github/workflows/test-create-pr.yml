@@ -14,7 +14,7 @@
 # - Tests PR creation/update with test labels
 # - Tests action outputs and error handling
 
-name: "[E2E]Test create-pr Action"
+name: "[E2E] Test create-pr Action"
 
 permissions:
   contents: write # Required for git push operations (step 4)
@@ -45,7 +45,7 @@ jobs:
         id: vars
         run: |
           base_branch=$(git symbolic-ref --short HEAD)  # Auto-detect base branch
-          pr_branch="test/create_pr"
+          pr_branch="tests/create_pr"
 
           # Fixed test values for integration testing
           {
@@ -104,7 +104,7 @@ jobs:
           cd ${{ steps.vars.outputs.worktree-dir }}
           echo "#!/bin/bash" > test-create-pr.sh
           echo "echo 'This is a test file for create-pr-from-worktree action test.'" >> ./tests/test-create-pr.sh
-          git add test-create-pr.sh
+          git add tests/test-create-pr.sh
           git commit -m "test: add test-create-pr.sh for create-pr-from-worktree action test"
           git push origin ${{ steps.vars.outputs.PR_BRANCH }} --force
 
