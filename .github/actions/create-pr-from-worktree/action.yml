@@ -139,9 +139,7 @@ runs:
         if [ -n "$EXISTING_PR" ]; then
           echo "PR #$EXISTING_PR already exists, updating title and body"
           mkdir -p ${RUNNER_TEMP}/temp
-          cat > ${RUNNER_TEMP}/temp/pr_body.txt <<'EOF'
-${{ inputs.pr-body }}
-EOF
+          printf '%s\n' "${{ inputs.pr-body }}" > ${RUNNER_TEMP}/temp/pr_body.txt
 
           # Update PR title and body with timeout
           if ! timeout 30s gh pr edit "$EXISTING_PR" \
@@ -160,9 +158,7 @@ EOF
         else
           echo "Creating new Pull Request"
           mkdir -p ${RUNNER_TEMP}/temp
-          cat > ${RUNNER_TEMP}/temp/pr_body.txt <<'EOF'
-${{ inputs.pr-body }}
-EOF
+          printf '%s\n' "${{ inputs.pr-body }}" > ${RUNNER_TEMP}/temp/pr_body.txt
           # Create PR with timeout (60 seconds for creation)
           if ! timeout 60s gh pr create \
             --base "$BASE_BRANCH" \
