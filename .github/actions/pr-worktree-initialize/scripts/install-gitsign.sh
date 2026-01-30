@@ -57,7 +57,7 @@ mkdir -p "${INSTALL_DIR}"
 
 # Download gitsign binary
 echo "Downloading gitsign binary..."
-BINARY_URL="${BASE_URL}/${VERSION#v}/${BINARY_NAME}"
+BINARY_URL="${BASE_URL}/v${VERSION}/${BINARY_NAME}"
 echo "URL: ${BINARY_URL}"
 
 if ! curl -fsSL -o "${TEMP_DIR}/gitsign" "${BINARY_URL}"; then
