@@ -108,10 +108,6 @@ jobs:
           echo "#!/bin/bash" > test-create-pr.sh
           echo "echo 'This is a test file for create-pr-from-worktree action integration test.'" >> test-create-pr.sh
 
-
-          # commit and push changes
-          gh auth status
-
           git add test-create-pr.sh
           git commit -m "test: add test-create-pr.sh for create-pr-from-worktree action test"
           git push origin ${{ steps.vars.outputs.PR_BRANCH }}
