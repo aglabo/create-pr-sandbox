@@ -102,8 +102,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd ${{ steps.vars.outputs.worktree-dir }}
-          echo "#!/bin/bash" > test-create-pr.sh
-          echo "echo 'This is a test file for create-pr-from-worktree action test.'" >> ./tests/test-create-pr.sh
+
+          # Ensure tests directory exists
+          mkdir -p tests
+
+          # Create test script
+          cat > tests/test-create-pr.sh << 'EOF'
+          #!/usr/bin/env bash
+          echo 'This is a test file for create-pr-from-worktree action test.'
+          EOF
+
+          # Make script executable
+          chmod +x tests/test-create-pr.sh
+
+          # Stage and commit
           git add tests/test-create-pr.sh
           git commit -m "test: add test-create-pr.sh for create-pr-from-worktree action test"
           git push origin ${{ steps.vars.outputs.PR_BRANCH }} --force
