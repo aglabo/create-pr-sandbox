@@ -108,7 +108,7 @@ jobs:
           git commit -m "test: add test-create-pr.sh for create-pr-from-worktree action test"
 
           echo "=== Commit Signature (commit) ==="
-          gitsign verify HEAD
+          gitsign verify
           echo ""
           echo "=== End of Commit Signature Verification ==="
 
@@ -118,7 +118,7 @@ jobs:
         run: |
           cd ${{ steps.vars.outputs.worktree-dir }}
           echo "=== Commit Signature (pushed) ==="
-          gitsign verify HEAD
+          gitsign verify
           echo ""
           echo "=== End of Commit Signature Verification ==="
 
