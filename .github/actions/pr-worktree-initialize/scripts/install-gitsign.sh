@@ -112,6 +112,7 @@ echo "✓ Binary installed"
 echo ""
 
 # Add to PATH
+export PATH="${INSTALL_DIR}:${PATH}"
 echo "Adding to PATH..."
 echo "${INSTALL_DIR}" >> "${GITHUB_PATH}"
 echo "✓ Added to PATH"
@@ -123,8 +124,6 @@ if ! "${INSTALL_DIR}/gitsign" version > /dev/null 2>&1; then
   echo "::error::gitsign installation verification failed"
   exit 1
 fi
-
-
 
 echo "=== gitsign installation complete ==="
 exit 0
