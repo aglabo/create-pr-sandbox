@@ -45,7 +45,7 @@ TEMP_DIR="${TEMP_DIR:-${RUNNER_TEMP}/gitsign-install}"
 INSTALL_DIR="${RUNNER_TEMP}/bin"
 BASE_URL="https://github.com/sigstore/gitsign/releases/download"
 ARCH_NAME="linux_amd64"
-BINARY_NAME="gitsign_${VERSION}_${ARCH_NAME}"
+BINARY_NAME="gitsign_${VERSION#v}_${ARCH_NAME}"
 CHECKSUM_FILE="checksums.txt"
 
 echo "=== Installing gitsign ${VERSION} ==="
@@ -57,7 +57,7 @@ mkdir -p "${INSTALL_DIR}"
 
 # Download gitsign binary
 echo "Downloading gitsign binary..."
-BINARY_URL="${BASE_URL}/v${VERSION}/${BINARY_NAME}"
+BINARY_URL="${BASE_URL}/v${VERSION#v}/${BINARY_NAME}"
 echo "URL: ${BINARY_URL}"
 
 if ! curl -fsSL -o "${TEMP_DIR}/gitsign" "${BINARY_URL}"; then
