@@ -119,6 +119,11 @@ runs:
         BASE_BRANCH="${{ steps.detect.outputs.base-branch }}"
         PR_BRANCH="${{ inputs.pr-branch }}"
 
+        # add user signature for commit
+        git config --local user.name "atsushifx[bot]"
+        git config --local user.email "atsushifx@gmail.com"
+
+
         # Check if PR already exists from head branch to base branch
         # Timeout after 30 seconds
         if ! EXISTING_PR=$(timeout 30s gh pr list --head "$PR_BRANCH" --base "$BASE_BRANCH" --json number --jq '.[0].number' 2>&1); then
@@ -133,11 +138,13 @@ runs:
 
         if [ -n "$EXISTING_PR" ]; then
           echo "PR #$EXISTING_PR already exists, updating title and body"
+          mkdir -p ${RUNNER_TEMP}/temp
+          echo ${{ inputs.pr-body }} > ${RUNNER_TEMP}/temp/pr_body.txt
 
           # Update PR title and body with timeout
           if ! timeout 30s gh pr edit "$EXISTING_PR" \
             --title "${{ inputs.pr-title }}" \
-            --body "${{ inputs.pr-body }}" 2>&1; then
+            --body ${RUNNER_TEMP}/temp/pr_body.txt 2>&1; then
             EXIT_CODE=$?
             if [ $EXIT_CODE -eq 124 ]; then
               echo "::error::GitHub API call (gh pr edit) timed out after 30 seconds"
@@ -164,13 +171,14 @@ runs:
           echo "✓ Updated PR #$EXISTING_PR: $PR_URL"
         else
           echo "Creating new Pull Request"
-
+          mkdir -p ${RUNNER_TEMP}/temp
+          echo ${{ inputs.pr-body }} > ${RUNNER_TEMP}/temp/pr_body.txt
           # Create PR with timeout (60 seconds for creation)
           if ! PR_URL=$(timeout 60s gh pr create \
             --base "$BASE_BRANCH" \
             --head "$PR_BRANCH" \
             --title "${{ inputs.pr-title }}" \
-            --body "${{ inputs.pr-body }}" 2>&1); then
+            --body ${RUNNER_TEMP}/temp/pr_body.txt; 2>&1); then
             EXIT_CODE=$?
             if [ $EXIT_CODE -eq 124 ]; then
               echo "::error::GitHub API call (gh pr create) timed out after 60 seconds"
