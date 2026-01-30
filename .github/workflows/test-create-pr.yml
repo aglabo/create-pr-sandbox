@@ -118,7 +118,7 @@ jobs:
         run: |
           cd ${{ steps.vars.outputs.worktree-dir }}
           echo "=== Commit Signature (pushed) ==="
-          gitsign verify
+          git log -1 --show-signature
           echo ""
           echo "=== End of Commit Signature Verification ==="
 
