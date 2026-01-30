@@ -118,7 +118,6 @@ runs:
       run: |
         BASE_BRANCH="${{ steps.detect.outputs.base-branch }}"
         PR_BRANCH="${{ inputs.pr-branch }}"
-        git switch "$PR_BRANCH"
 
         # Check if PR already exists from head branch to base branch
         # Timeout after 30 seconds
