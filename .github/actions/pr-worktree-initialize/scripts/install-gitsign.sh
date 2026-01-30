@@ -90,10 +90,12 @@ if [ -z "${EXPECTED_CHECKSUM}" ]; then
   echo "::error::Could not find checksum for ${BINARY_NAME} in checksums.txt"
   exit 1
 fi
-echo "Expected Checksum: ${EXPECTED_CHECKSUM}"
+
 
 # Calculate actual checksum
 ACTUAL_CHECKSUM=$(sha256sum gitsign | awk '{print $1}')
+
+echo "Expected Checksum: ${EXPECTED_CHECKSUM}"
 echo "Actual Checksum:   ${ACTUAL_CHECKSUM}"
 
 if [ "${EXPECTED_CHECKSUM}" != "${ACTUAL_CHECKSUM}" ]; then
