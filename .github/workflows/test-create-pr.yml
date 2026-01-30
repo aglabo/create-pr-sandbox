@@ -100,6 +100,10 @@ jobs:
           # goto worktree directory
           cd ${{ steps.vars.outputs.worktree-dir }}
 
+          # configure git user
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
           # create a test file
           echo "#!/bin/bash" > test-create-pr.sh
           echo "echo 'This is a test file for create-pr-from-worktree action integration test.'" >> test-create-pr.sh
