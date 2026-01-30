@@ -153,49 +153,87 @@ runs:
             fi
           fi
 
-          echo "pr_number=$EXISTING_PR" >> "$GITHUB_OUTPUT"
-          echo "operation=updated" >> "$GITHUB_OUTPUT"
-
-          # Get PR URL with timeout
-          if ! PR_URL=$(timeout 30s gh pr view "$EXISTING_PR" --json url --jq '.url' 2>&1); then
-            EXIT_CODE=$?
-            if [ $EXIT_CODE -eq 124 ]; then
-              echo "::error::GitHub API call (gh pr view) timed out after 30 seconds"
-              exit 124
-            else
-              echo "::error::Failed to get PR URL: $PR_URL"
-              exit $EXIT_CODE
-            fi
-          fi
-          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
-          echo "✓ Updated PR #$EXISTING_PR: $PR_URL"
+          # Mark as update operation
+          OPERATION="updated"
         else
           echo "Creating new Pull Request"
           mkdir -p ${RUNNER_TEMP}/temp
           echo ${{ inputs.pr-body }} > ${RUNNER_TEMP}/temp/pr_body.txt
           # Create PR with timeout (60 seconds for creation)
-          if ! PR_URL=$(timeout 60s gh pr create \
+          if ! timeout 60s gh pr create \
             --base "$BASE_BRANCH" \
             --head "$PR_BRANCH" \
             --title "${{ inputs.pr-title }}" \
-            --body ${RUNNER_TEMP}/temp/pr_body.txt; 2>&1); then
+            --body ${RUNNER_TEMP}/temp/pr_body.txt 2>&1; then
             EXIT_CODE=$?
             if [ $EXIT_CODE -eq 124 ]; then
               echo "::error::GitHub API call (gh pr create) timed out after 60 seconds"
             else
-              echo "::error::Failed to create PR: $PR_URL"
+              echo "::error::Failed to create PR"
             fi
             exit $EXIT_CODE
           fi
 
-          echo "✓ Created PR: $PR_URL"
-
-          # Extract PR number from URL
-          PR_NUMBER=$(echo "$PR_URL" | grep -oP '\d+$')
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
-          echo "operation=created" >> "$GITHUB_OUTPUT"
+          # Mark as create operation
+          OPERATION="created"
         fi
+
+        # Common output handling after PR creation/update
+        # Validate operation is set
+        if [ -z "$OPERATION" ]; then
+          echo "::error::Failed to determine operation type"
+          exit 1
+        fi
+
+        # Get PR information from repository (unified for both create and update)
+        if ! PR_JSON=$(timeout 30s gh pr list --head "$PR_BRANCH" --base "$BASE_BRANCH" --json number,url --jq '.[0]' 2>&1); then
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -eq 124 ]; then
+            echo "::error::GitHub API call (gh pr list) timed out after 30 seconds"
+          else
+            echo "::error::Failed to get PR information: $PR_JSON"
+          fi
+          exit $EXIT_CODE
+        fi
+
+        # Validate PR was found
+        if [ -z "$PR_JSON" ] || [ "$PR_JSON" = "null" ]; then
+          echo "::error::No PR found for branch $PR_BRANCH -> $BASE_BRANCH"
+          exit 1
+        fi
+
+        # Extract number and URL from JSON
+        PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
+        PR_URL=$(echo "$PR_JSON" | jq -r '.url')
+
+        # Validate extracted values
+        if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+          echo "::error::Failed to extract PR number from response"
+          exit 1
+        fi
+
+        if [ -z "$PR_URL" ] || [ "$PR_URL" = "null" ]; then
+          echo "::error::Failed to extract PR URL from response"
+          exit 1
+        fi
+
+        # Set all outputs in one place
+        echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+        echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+        echo "operation=$OPERATION" >> "$GITHUB_OUTPUT"
+
+        # Display unified success message
+        case "$OPERATION" in
+          updated)
+            echo "✓ Updated PR #$PR_NUMBER: $PR_URL"
+            ;;
+          created)
+            echo "✓ Created PR #$PR_NUMBER: $PR_URL"
+            ;;
+          *)
+            echo "::warning::Unknown operation: $OPERATION"
+            ;;
+        esac
 
     - name: Set PR labels
       id: set_labels
