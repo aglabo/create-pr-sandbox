@@ -84,7 +84,7 @@ echo "Verifying checksum..."
 cd "${TEMP_DIR}"
 
 # Extract checksum for our binary
-EXPECTED_CHECKSUM=$(grep "${BINARY_NAME}" checksums.txt | awk '{print $1}')
+EXPECTED_CHECKSUM=$(awk -v binary="${BINARY_NAME}" '$2 == binary {print $1; exit}' checksums.txt)
 
 if [ -z "${EXPECTED_CHECKSUM}" ]; then
   echo "::error::Could not find checksum for ${BINARY_NAME} in checksums.txt"
