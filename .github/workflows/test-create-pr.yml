@@ -31,6 +31,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -110,7 +111,7 @@ jobs:
 
           # commit and push changes
           git add test-create-pr.sh
-          git commit -m "test: add test-create-pr.sh for create-pr-from-worktree action test"
+          git commit -m "test: add test-create-pr.sh for create-pr-from-worktree action test" --no-verify
           git push origin ${{ steps.vars.outputs.PR_BRANCH }} --force
 
       - name: create pr using composite action
