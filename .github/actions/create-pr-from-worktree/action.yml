@@ -1,5 +1,5 @@
 # src: ./.github/actions/create-pr-from-worktree/action.yml
-# @(#) : Composite action to create PRs from worktree with auto-merge enabled
+# @(#) : Composite action to create PRs from worktree as draft
 #
 # Copyright (c) 2025 atsushifx <https://github.com/atsushifx>
 #
@@ -7,7 +7,7 @@
 # https://opensource.org/licenses/MIT
 
 name: Create PR from Worktree
-description: Create or update a Pull Request from worktree with labels and auto-merge enabled (assumes branches already exist and are pushed)
+description: Create or update a Pull Request from worktree as draft with labels (assumes branches already exist and are pushed)
 author: atsushifx
 
 inputs:
@@ -163,7 +163,8 @@ runs:
             --base "$BASE_BRANCH" \
             --head "$PR_BRANCH" \
             --title "${{ inputs.pr-title }}" \
-            --body-file ${RUNNER_TEMP}/temp/pr_body.txt 2>&1; then
+            --body-file ${RUNNER_TEMP}/temp/pr_body.txt \
+            --draft 2>&1; then
             EXIT_CODE=$?
             if [ $EXIT_CODE -eq 124 ]; then
               echo "::error::GitHub API call (gh pr create) timed out after 60 seconds"
