@@ -120,8 +120,8 @@ runs:
         PR_BRANCH="${{ inputs.pr-branch }}"
 
         # add user signature for commit
-        git config --local user.name "github-actions[bot]"
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        #git config --local user.name "github-actions[bot]"
+        #git config --local user.email "github-actions[bot]@users.noreply.github.com"
 
         # Check if PR already exists from head branch to base branch
         # Timeout after 30 seconds
