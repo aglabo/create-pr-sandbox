@@ -127,3 +127,10 @@ jobs:
         if: always()
         run: |
           git worktree remove ${{ steps.vars.outputs.worktree-dir }} --force
+
+  scan-gitleaks:
+    name: Gitleaks Secret Scan
+    permissions:
+      contents: read
+    needs: test-action
+    uses: aglabo/.github/.github/workflows/ci-common-scan-gitleaks.yml@r1.1.1
