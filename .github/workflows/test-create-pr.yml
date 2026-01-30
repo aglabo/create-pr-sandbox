@@ -106,7 +106,15 @@ jobs:
           echo "echo 'This is a test file for create-pr-from-worktree action test.'" >> test-create-pr.sh
           git add test-create-pr.sh
           git commit -m "test: add test-create-pr.sh for create-pr-from-worktree action test"
+          echo "--- check signed commit ---"
+          git log -1 --show-signature
+
           git push origin ${{ steps.vars.outputs.PR_BRANCH }} --force
+
+          echo "--- check signed commit (pushed) ---"
+          git log -1 --show-signature
+
+          echo "--- end ---"
 
       - name: Verify signed commit
         run: |
