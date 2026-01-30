@@ -111,7 +111,7 @@ jobs:
           # commit and push changes
           git add test-create-pr.sh
           git commit -m "test: add test-create-pr.sh for create-pr-from-worktree action test"
-          git push origin ${{ steps.vars.outputs.PR_BRANCH }}
+          git push origin ${{ steps.vars.outputs.PR_BRANCH }} --force
 
       - name: create pr using composite action
         uses: ./.github/actions/create-pr-from-worktree
