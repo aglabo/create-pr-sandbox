@@ -15,14 +15,15 @@ auto-merge for Bot-generated PRs before use.
 
 Before calling this action, ensure:
 
-1. The base branch exists on the remote repository
-2. Changes are committed to the current branch
-3. Current branch is pushed to origin
-4. You are on the branch you want to create a PR from (not in detached HEAD state)
+1. **You must be on the base branch** - The currently checked-out branch becomes the base branch for the PR (auto-detected)
+2. The PR branch (head branch) exists on the remote repository
+3. Changes are committed to the PR branch
+4. The PR branch is pushed to origin
+5. You are not in detached HEAD state
 
 This action focuses solely on GitHub PR operations - it does not perform
-git operations like branch creation, commits, or pushes. The action automatically
-detects the current branch as the PR head branch.
+git operations like branch creation, commits, or pushes. The base branch is automatically
+detected from the currently checked-out branch, and you specify only the PR branch (head branch) as input.
 
 ## Features
 
@@ -43,18 +44,23 @@ detects the current branch as the PR head branch.
 ### Basic Example
 
 ```yaml
-# Create and push branch first
+# Create and push PR branch first (while on base branch)
 - name: Create PR branch
   run: |
+    # Currently on base branch (e.g., main)
     git checkout -b auto-fix/${{ github.ref_name }}
     git commit -m "fix: Auto-fix issues"
     git push origin auto-fix/${{ github.ref_name }}
 
-# Then create the PR (head branch is auto-detected from current branch)
+# Return to base branch before creating PR
+- name: Return to base branch
+  run: git checkout ${{ github.ref_name }}
+
+# Create the PR (base branch auto-detected from current branch)
 - name: Create Pull Request
   uses: ./.github/actions/create-pr-from-worktree
   with:
-    base-branch: ${{ github.ref_name }}
+    pr-branch: auto-fix/${{ github.ref_name }}
     pr-title: "fix: Auto-fix issues"
     pr-body: "This PR automatically fixes detected issues."
     labels: "automated,fix"
@@ -67,14 +73,19 @@ detects the current branch as the PR head branch.
 # Create PR without auto-merge for manual review
 - name: Create PR branch
   run: |
+    # Currently on base branch
     git checkout -b feature/${{ github.ref_name }}
     git commit -m "feat: Add new feature"
     git push origin feature/${{ github.ref_name }}
 
+# Return to base branch
+- name: Return to base branch
+  run: git checkout ${{ github.ref_name }}
+
 - name: Create Pull Request (manual merge required)
   uses: ./.github/actions/create-pr-from-worktree
   with:
-    base-branch: ${{ github.ref_name }}
+    pr-branch: feature/${{ github.ref_name }}
     pr-title: "feat: Add new feature"
     pr-body: "This PR requires manual review and approval."
     labels: "feature,needs-review"
@@ -103,12 +114,16 @@ detects the current branch as the PR head branch.
     git commit -m "[Bot] ci(scripts): Fix shell script permissions"
     git push -f origin "$PR_BRANCH"
 
-# Create PR with custom settings (head branch auto-detected)
+# Return to base branch before creating PR
+- name: Return to base branch
+  run: git checkout ${{ github.ref_name }}
+
+# Create PR (base branch auto-detected from current branch)
 - name: Create PR with auto-merge
   id: create_pr
   uses: ./.github/actions/create-pr-from-worktree
   with:
-    base-branch: ${{ github.ref_name }}
+    pr-branch: auto-chmod/${{ github.ref_name }}
     pr-title: "[Bot] ci(scripts): Fix shell script permissions"
     pr-body: |
       ## Auto-generated PR: Shell Script Permission Fix
@@ -151,11 +166,15 @@ outputs, allowing you to handle errors gracefully. PR creation only proceeds whe
 validations return `ok`:
 
 ```yaml
+# Must be on base branch (e.g., main) before calling this action
+- name: Checkout base branch
+  run: git checkout main
+
 - name: Create PR
   id: create_pr
   uses: ./.github/actions/create-pr-from-worktree
   with:
-    base-branch: main
+    pr-branch: feature/my-feature
     pr-title: "New feature"
     pr-body: "Description"
 
@@ -199,7 +218,7 @@ validations return `ok`:
 
 | Input          | Description                                                                               | Required | Default      |
 | -------------- | ----------------------------------------------------------------------------------------- | -------- | ------------ |
-| `base-branch`  | Base branch name (target branch for PR)                                                   | Yes      | -            |
+| `pr-branch`    | PR branch name (head branch for the pull request)                                         | Yes      | -            |
 | `pr-title`     | Pull request title                                                                        | Yes      | -            |
 | `pr-body`      | Pull request body/description                                                             | Yes      | -            |
 | `labels`       | Comma-separated labels to add                                                             | No       | `''` (empty) |
@@ -228,26 +247,30 @@ all validation steps return `ok` status. If any validation returns `fail`, `erro
 `pr-operation` will be empty. This ensures PRs are only created in fully validated
 environments.
 
-## Branch Requirements
+## Branch Requirements and Detection
 
-The action requires both base and current branches to already exist
-on the remote repository. The action:
+The action requires both base and PR branches to already exist on the remote repository.
 
-1. Auto-detects the current branch as the PR head branch
+**Base Branch Auto-Detection**:
+
+- The **currently checked-out branch** becomes the base branch (auto-detected using `git symbolic-ref --short HEAD`)
+- You must checkout the base branch **before** calling this action
+- Only the `pr-branch` (head branch) needs to be specified as input
+
+**Validation**:
+
+1. Base branch is auto-detected from current branch
 2. Validates:
    - Base branch exists on remote
-   - Current branch exists on remote
-   - Base and current branches are different
+   - PR branch exists on remote
+   - Base and PR branches are different
 
-**Example branch configuration**:
+**Example branch configurations**:
 
-- Checked out on `auto-fix/main` + `base-branch: main` creates PR from
-  `auto-fix/main` → `main`
-- Checked out on `auto-chmod/feat/new-feature` + `base-branch: feat/new-feature`
-  creates PR from `auto-chmod/feat/new-feature` → `feat/new-feature`
+- Checked out on `main` + `pr-branch: auto-fix/main` → creates PR from `auto-fix/main` → `main`
+- Checked out on `feat/new-feature` + `pr-branch: auto-chmod/feat/new-feature` → creates PR from `auto-chmod/feat/new-feature` → `feat/new-feature`
 
-**Important**: You must be on a checked-out branch. Detached HEAD state will
-cause the action to fail with an error.
+**Important**: You must be on a checked-out branch. Detached HEAD state will cause the action to fail with "Failed to detect current branch name" error.
 
 ## Label Management
 
@@ -330,12 +353,10 @@ steps:
 
 ## How It Works
 
-1. **Detect Branch**: Auto-detects current branch name for PR head
+1. **Detect Base Branch**: Auto-detects current branch as base branch using `git symbolic-ref --short HEAD` (fails if in detached HEAD state)
 2. **Validate Environment**: Verifies OS, GitHub CLI, and API rate limits (fail-first: must be `ok`)
-3. **Validate Branches**: Verifies base and current branches exist on remote
-   and are different (fail-first: must be `ok`)
-4. **Create/Update PR**: Creates new PR or updates existing one with
-   title and body (only if all validations are `ok`)
+3. **Validate Branches**: Verifies base and PR branches exist on remote and are different (fail-first: must be `ok`)
+4. **Create/Update PR**: Creates new PR or updates existing one with title and body (only if all validations are `ok`)
 5. **Apply Labels**: Creates labels if needed and applies them (only if all validations are `ok`)
 6. **Enable Auto-Merge**: Configures auto-merge with specified method (only if `merge-method` is not `never`)
 
@@ -354,45 +375,65 @@ steps:
 
 ### "Failed to detect current branch name"
 
-This error occurs when running in detached HEAD state. Ensure you have a checked-out branch:
+This error occurs when running in detached HEAD state. You must be on the **base branch** when calling this action:
 
 ```yaml
 # Bad: Detached HEAD state
 - run: git checkout HEAD~1
 
-# Good: Checked out branch
-- run: git checkout -b my-pr-branch
-```
+# Bad: On PR branch instead of base branch
+- run: git checkout my-pr-branch
 
-If you need to switch branches in your workflow, ensure you check out the PR branch before calling this action:
-
-```yaml
-- name: Switch to PR branch
-  run: git checkout my-pr-branch
-
-- name: Create PR
-  uses: ./.github/actions/create-pr-from-worktree
+# Good: On base branch
+- run: git checkout main
+- uses: ./.github/actions/create-pr-from-worktree
   with:
-    base-branch: main
-    # head branch auto-detected as my-pr-branch
+    pr-branch: my-pr-branch
 ```
 
-### "Branch does not exist on remote"
-
-Ensure branches are pushed before calling this action:
+**Correct workflow pattern**:
 
 ```yaml
-- name: Create and push branch
+# 1. Create and push PR branch
+- name: Create PR branch
   run: |
     git checkout -b my-pr-branch
     git commit -m "My changes"
     git push origin my-pr-branch
 
+# 2. Return to base branch
+- name: Return to base branch
+  run: git checkout main
+
+# 3. Create PR (base branch auto-detected as main)
 - name: Create PR
   uses: ./.github/actions/create-pr-from-worktree
   with:
-    base-branch: main
-    # head branch auto-detected as my-pr-branch
+    pr-branch: my-pr-branch
+    pr-title: "My PR"
+    pr-body: "Description"
+```
+
+### "Branch does not exist on remote"
+
+Ensure the PR branch is pushed before calling this action, and that you're on the base branch:
+
+```yaml
+- name: Create and push PR branch
+  run: |
+    git checkout -b my-pr-branch
+    git commit -m "My changes"
+    git push origin my-pr-branch
+
+- name: Return to base branch
+  run: git checkout main
+
+- name: Create PR
+  uses: ./.github/actions/create-pr-from-worktree
+  with:
+    pr-branch: my-pr-branch
+    pr-title: "My PR"
+    pr-body: "Description"
 ```
 
 ### Auto-merge not working

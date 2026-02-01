@@ -1,21 +1,19 @@
-# PR Worktree Initialize
+# PR Worktree Setup
 
 <!-- textlint-disable ja-technical-writing/sentence-length -->
 <!-- markdownlint-disable line-length -->
 
-Composite action to create a git worktree and configure gitsign for keyless signed commits using Sigstore.
+Sigstore を使用したキーレス署名付きコミットのための git worktree を作成し、gitsign を設定する Composite Action。
 
 ## Overview
 
-This action simplifies the process of creating a git worktree with gitsign configured for signing commits. It combines worktree creation, gitsign installation, and configuration into a single reusable step.
+このアクションは、コミット署名用に gitsign が設定された git worktree を作成するプロセスを簡素化します。worktree の作成、gitsign のインストール、および設定を単一の再利用可能なステップにまとめます。
 
 **Key Features:**
 
-- Installs gitsign from official Sigstore releases
-- Verifies installation with checksum validation
-- Creates git worktree for isolated branch work
-- Configures gitsign for keyless signing with Sigstore
-- Uses GitHub Actions OIDC for authentication (no secrets required)
+- Worktree 作成
+- Gitsign のインストール
+- Gitsign による署名付きコミット自動設定
 
 ## Prerequisites
 
@@ -23,41 +21,44 @@ This action simplifies the process of creating a git worktree with gitsign confi
 
 ```yaml
 permissions:
-  id-token: write # Required for OIDC token access (gitsign keyless signing)
-  contents: write # Required for git operations
+  id-token: write # OIDC トークンアクセスに必要 (gitsign keyless signing)
+  contents: write # Git 操作に必要
 ```
 
 **Runner Requirements:**
 
-- Linux runner (ubuntu-latest recommended)
+- Linux runner (ubuntu-latest 推奨)
 - Git 2.30+
 
 ## Inputs
 
-| Input             | Required | Default                                        | Description                     |
-| ----------------- | -------- | ---------------------------------------------- | ------------------------------- |
-| `branch-name`     | Yes      | -                                              | Branch name for the worktree    |
-| `worktree-dir`    | Yes      | -                                              | Directory path for the worktree |
-| `gitsign-version` | No       | `v0.14.0`                                      | Gitsign version to install      |
-| `user-name`       | No       | `github-actions[bot]`                          | Git user name for commits       |
-| `user-email`      | No       | `github-actions[bot]@users.noreply.github.com` | Git user email for commits      |
+<!-- markdownlint-disable table-column-style -->
+
+| Input             | Required | Default                                        | Description                           |
+| ----------------- | -------- | ---------------------------------------------- | ------------------------------------- |
+| `branch-name`     | Yes      | -                                              | Worktree 用のブランチ名               |
+| `worktree-dir`    | Yes      | -                                              | Worktree のディレクトリパス           |
+| `gitsign-version` | No       | `v0.14.0`                                      | インストールする Gitsign のバージョン |
+| `user-name`       | No       | `github-actions[bot]`                          | コミット用の Git ユーザー名           |
+| `user-email`      | No       | `github-actions[bot]@users.noreply.github.com` | コミット用の Git メールアドレス       |
+
+<!-- markdownlint-enable -->
 
 ## Outputs
 
-| Output               | Description                                    |
-| -------------------- | ---------------------------------------------- |
-| `worktree-path`      | Absolute path to the created worktree          |
-| `validation-status`  | Gitsign validation status (ok, error, warning) |
-| `validation-message` | Validation status message                      |
-| `gitsign-version`    | Installed gitsign version                      |
+| Output               | Description                                 |
+| -------------------- | ------------------------------------------- |
+| `worktree-path`      | 作成された worktree の絶対パス              |
+| `validation-status`  | Gitsign 検証ステータス (ok, error, warning) |
+| `validation-message` | 検証ステータスメッセージ                    |
 
 ## Usage
 
 ### Basic Usage
 
 ```yaml
-- name: Initialize worktree with gitsign
-  uses: ./.github/actions/pr-worktree-initialize
+- name: gitsign で worktree を初期化
+  uses: ./.github/actions/pr-worktree-setup
   with:
     branch-name: feature/my-branch
     worktree-dir: ${{ runner.temp }}/my-worktree
@@ -66,7 +67,7 @@ permissions:
 ### Full Example with Signed Commits
 
 ```yaml
-name: Create Signed Commit
+name: 署名付きコミットの作成
 
 permissions:
   id-token: write
@@ -76,17 +77,17 @@ jobs:
   create-commit:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: リポジトリをチェックアウト
         uses: actions/checkout@v4
 
-      - name: Initialize worktree with gitsign
-        uses: ./.github/actions/pr-worktree-initialize
+      - name: gitsign で worktree を初期化
+        uses: ./.github/actions/pr-worktree-setup
         id: init
         with:
           branch-name: feature/my-branch
           worktree-dir: ${{ runner.temp }}/worktree
 
-      - name: Make changes and commit
+      - name: 変更を加えてコミット
         run: |
           cd ${{ steps.init.outputs.worktree-path }}
           echo "Hello, World!" > hello.txt
@@ -94,22 +95,23 @@ jobs:
           git commit -m "feat: add hello world"
           git push origin feature/my-branch
 
-      - name: Verify signed commit
+      - name: 署名付きコミットを検証
         run: |
           cd ${{ steps.init.outputs.worktree-path }}
           git log -1 --show-signature
 
-      - name: Cleanup
+      - name: worktree をクリーンアップ
         if: always()
-        run: |
-          git worktree remove ${{ steps.init.outputs.worktree-path }} --force
+        uses: ./.github/actions/pr-worktree-cleanup
+        with:
+          worktree-dir: ${{ steps.init.outputs.worktree-path }}
 ```
 
 ### Custom Gitsign Version
 
 ```yaml
-- name: Initialize worktree with specific gitsign version
-  uses: ./.github/actions/pr-worktree-initialize
+- name: 特定の gitsign バージョンで worktree を初期化
+  uses: ./.github/actions/pr-worktree-setup
   with:
     branch-name: feature/my-branch
     worktree-dir: ${{ runner.temp }}/worktree
@@ -119,8 +121,8 @@ jobs:
 ### Custom User Configuration
 
 ```yaml
-- name: Initialize worktree with custom user
-  uses: ./.github/actions/pr-worktree-initialize
+- name: カスタムユーザーで worktree を初期化
+  uses: ./.github/actions/pr-worktree-setup
   with:
     branch-name: feature/my-branch
     worktree-dir: ${{ runner.temp }}/worktree
@@ -130,15 +132,15 @@ jobs:
 
 ## How It Works
 
-1. **Install Gitsign**: Downloads and installs gitsign binary from official Sigstore releases
-2. **Validate Installation**: Verifies gitsign is installed and OIDC environment is available
-3. **Create Worktree**: Creates git worktree with specified branch
-4. **Configure Gitsign**: Sets git config for signed commits using x509 format
-5. **Set User Config**: Configures git user name and email
+1. **Install Gitsign**: 公式 Sigstore リリースから gitsign バイナリをダウンロードしてインストール
+2. **Validate Installation**: gitsign がインストールされ、OIDC 環境が利用可能であることを確認
+3. **Create Worktree**: 指定されたブランチで git worktree を作成
+4. **Configure Gitsign**: x509 形式を使用した署名付きコミット用の git 設定
+5. **Set User Config**: git ユーザー名とメールアドレスを設定
 
 ## Git Configuration
 
-The action automatically configures the worktree with:
+このアクションは、worktree を以下の設定で自動的に構成します。
 
 ```bash
 git config --local commit.gpgsign true
@@ -150,31 +152,31 @@ git config --local user.email "github-actions[bot]@users.noreply.github.com"
 
 ## Verification
 
-To verify that commits are signed:
+コミットが署名されていることを確認するには、次のコマンドを実行します。
 
 ```bash
-# Show signature information
+# 署名情報を表示
 git log -1 --show-signature
 
-# Verify commit signature
+# コミット署名を検証
 git verify-commit HEAD
 ```
 
-Expected output includes:
+期待される出力には以下が含まれます。
 
 <!-- cspell:words Fulcio Rekor -->
 
-- Fulcio certificate information
-- Rekor transparency log entry
-- GitHub Actions OIDC issuer information
+- Fulcio 証明書情報
+- Rekor 透明性ログエントリ
+- GitHub Actions OIDC 発行者情報
 
 ## Troubleshooting
 
 ### Error: "ACTIONS_ID_TOKEN_REQUEST_TOKEN is not set"
 
-**Cause**: Missing `id-token: write` permission
+**Cause**: `id-token: write` パーミッションが不足。
 
-**Solution**: Add permission to workflow:
+**Solution**: ワークフローにパーミッションを追加してください。
 
 ```yaml
 permissions:
@@ -183,67 +185,67 @@ permissions:
 
 ### Error: "gitsign is not installed or not in PATH"
 
-**Cause**: Installation step failed or binary not accessible
+**Cause**: インストールステップが失敗したか、バイナリにアクセスできない。
 
-**Solution**: Check workflow logs for installation errors. Ensure runner has network access to download from GitHub releases.
+**Solution**: インストールエラーのワークフローログを確認してください。ランナーが GitHub リリースからダウンロードするためのネットワークアクセスを持っていることを確認してください。
 
 ### Error: "Failed to download gitsign binary"
 
-**Cause**: Network issue or invalid version
+**Cause**: ネットワークの問題または無効なバージョン。
 
 **Solution**:
 
-- Check network connectivity
-- Verify gitsign-version is valid (see [releases](https://github.com/sigstore/gitsign/releases))
-- Try default version first
+- ネットワーク接続を確認
+- gitsign-version が有効であることを確認 ([リリース](https://github.com/sigstore/gitsign/releases)を参照)
+- まずデフォルトバージョンを試す
 
 ### Commits Not Signed
 
-**Cause**: Configuration issue or OIDC token problem
+**Cause**: 設定の問題または OIDC トークンの問題。
 
 **Solution**:
 
-- Verify `id-token: write` permission is set
-- Check validation output in action logs
-- Ensure commits are made within the worktree directory
+- `id-token: write` パーミッションが設定されていることを確認
+- アクションログで検証出力を確認
+- コミットが worktree ディレクトリ内で行われていることを確認
 
 ## Security Considerations
 
 **No Long-Lived Secrets:**
 
-- Uses GitHub Actions OIDC for temporary certificates
-- No GPG keys to manage or store
-- Certificates are short-lived and tied to workflow run
+- 一時証明書には GitHub Actions OIDC を使用
+- 管理または保存する GPG キーなし
+- 証明書は短期間で、ワークフロー実行に紐付けられる
 
 **Required Permissions:**
 
-- `id-token: write` - Only for OIDC token access
-- `contents: write` - Only for git operations
+- `id-token: write` - OIDC トークンアクセスのみ
+- `contents: write` - Git 操作のみ
 
 **Transparency:**
 
-- All signatures are recorded in Rekor transparency log
-- Publicly auditable signing events
+- すべての署名は Rekor 透明性ログに記録される
+- 公開監査可能な署名イベント
 
 ## Maintenance
 
 ### Updating Gitsign Version
 
-When a new gitsign version is released:
+新しい gitsign バージョンがリリースされた場合の手順は次のとおりです。
 
-1. Test on a feature branch first
-2. Update default version in `action.yml`
-3. Verify with test workflow
+1. まず機能ブランチでテスト
+2. `action.yml` のデフォルトバージョンを更新
+3. テストワークフローで検証
 
 ### Compatibility
 
-- OS: Linux only (ubuntu-latest recommended)
-- Git: 2.30+ recommended
-- Gitsign: 0.13.0+ supported
+- OS: Linux のみ (ubuntu-latest 推奨)
+- Git: 2.30+ 推奨
+- Gitsign: 0.13.0+ サポート
 
 ## License
 
-MIT License - See repository LICENSE file
+MIT License - リポジトリの LICENSE ファイルを参照。
 
 ## References
 
