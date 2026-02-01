@@ -3,11 +3,11 @@
 <!-- textlint-disable ja-technical-writing/sentence-length -->
 <!-- markdownlint-disable line-length -->
 
-Composite action to safely remove a git worktree created by pr-worktree-initialize.
+Composite action to safely remove a git worktree created by pr-worktree-setup.
 
 ## Overview
 
-This action provides safe and idempotent cleanup of git worktrees. It pairs with the `pr-worktree-initialize` action to provide complete worktree lifecycle management.
+This action provides safe and idempotent cleanup of git worktrees. It pairs with the `pr-worktree-setup` action to provide complete worktree lifecycle management.
 
 **Key Features:**
 
@@ -27,12 +27,12 @@ This action provides safe and idempotent cleanup of git worktrees. It pairs with
 
 **Recommended Usage:**
 
-Use with `pr-worktree-initialize` action for complete workflow:
+Use with `pr-worktree-setup` action for complete workflow:
 
 ```yaml
 - name: Initialize worktree
   id: init-worktree
-  uses: ./.github/actions/pr-worktree-initialize
+  uses: ./.github/actions/pr-worktree-setup
   with:
     branch-name: feature/my-branch
     worktree-dir: ${{ runner.temp }}/worktree
@@ -48,10 +48,11 @@ Use with `pr-worktree-initialize` action for complete workflow:
 
 ## Inputs
 
-| Input          | Required | Default | Description                                                 |
-| -------------- | -------- | ------- | ----------------------------------------------------------- |
-| `worktree-dir` | Yes      | -       | Directory path of the worktree to remove                    |
-| `force`        | No       | `true`  | Force removal even if worktree has uncommitted changes      |
+| Input          | Required | Default | Description                                                                    |
+| -------------- | -------- | ------- | ------------------------------------------------------------------------------ |
+| `worktree-dir` | No       | -       | Directory path of the worktree to remove (auto-detected if not provided)       |
+| `base-branch`  | No       | -       | Base branch to exclude from cleanup (auto-detected if not provided)            |
+| `force`        | No       | `true`  | Force removal even if worktree has uncommitted changes                         |
 
 ## Outputs
 
@@ -74,7 +75,7 @@ Use with `pr-worktree-initialize` action for complete workflow:
 
 The `if: always()` condition ensures cleanup runs even if previous steps fail.
 
-### Integration with pr-worktree-initialize
+### Integration with pr-worktree-setup
 
 ```yaml
 name: Create Signed PR
@@ -93,7 +94,7 @@ jobs:
 
       - name: Initialize worktree with gitsign
         id: init-worktree
-        uses: ./.github/actions/pr-worktree-initialize
+        uses: ./.github/actions/pr-worktree-setup
         with:
           branch-name: feature/my-feature
           worktree-dir: ${{ runner.temp }}/pr-worktree
@@ -129,6 +130,22 @@ jobs:
 
 With `force: false`, removal will fail if the worktree has uncommitted changes. This is useful when you want to ensure no work is lost.
 
+### Auto-Detection Mode
+
+```yaml
+- name: Cleanup worktree (auto-detect)
+  if: always()
+  uses: ./.github/actions/pr-worktree-cleanup
+```
+
+When no inputs are provided, the action automatically:
+
+1. Detects the current branch as the base branch
+2. Finds the first worktree that is NOT the base branch
+3. Removes the detected worktree
+
+This is useful when you have a single worktree and want automatic cleanup without tracking worktree paths.
+
 ### Handling Cleanup Status
 
 ```yaml
@@ -150,7 +167,11 @@ With `force: false`, removal will fail if the worktree has uncommitted changes. 
 
 ## How It Works
 
-1. **Validate Inputs**: Checks that `worktree-dir` is provided
+1. **Get Worktree Path**:
+   - If `worktree-dir` is provided: Use it directly
+   - If not provided: Auto-detect worktree
+     - Detect base branch from `base-branch` input or current branch
+     - Find first worktree that is NOT the base branch
 2. **Check Directory Exists**: Verifies worktree directory exists
    - If not found: Returns `warning` status (idempotent behavior)
 3. **Validate Worktree**: Confirms directory is a valid git worktree
@@ -216,13 +237,13 @@ EXIT_STATUS=error:Directory is not a valid git worktree
 - Worktree was never created successfully
 - Worktree was removed manually or by another step
 
-**Solution**: Check workflow logs to verify worktree creation succeeded. If using output from `pr-worktree-initialize`, ensure the step ID matches.
+**Solution**: Check workflow logs to verify worktree creation succeeded. If using output from `pr-worktree-setup`, ensure the step ID matches.
 
 ### Cleanup Fails with "Not a Valid Git Worktree"
 
 **Cause**: The directory exists but wasn't created with `git worktree add`
 
-**Solution**: Ensure you're passing the correct path from `pr-worktree-initialize`. Don't pass arbitrary directories.
+**Solution**: Ensure you're passing the correct path from `pr-worktree-setup`. Don't pass arbitrary directories.
 
 ### Permission Denied
 
@@ -231,6 +252,8 @@ EXIT_STATUS=error:Directory is not a valid git worktree
 **Solution**: Ensure the workflow has appropriate permissions and the worktree isn't locked by another process.
 
 ## Design Decisions
+
+<!-- textlint-disable ja-technical-writing/no-exclamation-question-mark -->
 
 ### Why Default force: true?
 
@@ -252,15 +275,17 @@ This design prevents false-positive failures in CI/CD pipelines.
 
 The validation prevents accidentally running `git worktree remove` on arbitrary directories, which could cause unexpected behavior. By checking for the `.git` file (worktree marker), we ensure the action only operates on legitimate git worktrees.
 
-## Pairing with pr-worktree-initialize
+<!-- textlint-enable ja-technical-writing/no-exclamation-question-mark -->
 
-This action is designed to pair with `pr-worktree-initialize`:
+## Pairing with pr-worktree-setup
+
+This action is designed to pair with `pr-worktree-setup`:
 
 ```yaml
 # Initialize
 - name: Initialize worktree
   id: init-worktree
-  uses: ./.github/actions/pr-worktree-initialize
+  uses: ./.github/actions/pr-worktree-setup
   with:
     branch-name: feature/my-branch
     worktree-dir: ${{ runner.temp }}/worktree
@@ -302,5 +327,5 @@ MIT License - See repository LICENSE file
 ## References
 
 - [Git Worktree Documentation](https://git-scm.com/docs/git-worktree)
-- [PR Worktree Initialize Action](../pr-worktree-initialize/README.md)
+- [PR Worktree Setup Action](../pr-worktree-setup/README.md)
 - [GitHub Actions Workflow Syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
