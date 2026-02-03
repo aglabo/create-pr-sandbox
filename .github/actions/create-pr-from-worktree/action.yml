@@ -32,19 +32,19 @@ inputs:
 outputs:
   validation-status:
     description: "Overall validation status (ok, fail, error, warning)"
-    value: ${{ steps.validate_branches.outputs.status }}
+    value: ${{ steps.validate-branches.outputs.status }}
   validation-message:
     description: "Validation status message (if any)"
-    value: ${{ steps.validate_branches.outputs.message }}
+    value: ${{ steps.validate-branches.outputs.message }}
   pr-number:
     description: "Created/updated PR number"
-    value: ${{ steps.create_pr.outputs.pr_number }}
+    value: ${{ steps.create-pr.outputs.pr-number }}
   pr-url:
     description: "Pull request URL"
-    value: ${{ steps.create_pr.outputs.pr_url }}
+    value: ${{ steps.create-pr.outputs.pr-url }}
   pr-operation:
     description: "Operation performed (created, updated, none)"
-    value: ${{ steps.create_pr.outputs.operation }}
+    value: ${{ steps.create-pr.outputs.operation }}
 
 runs:
   using: composite
@@ -67,7 +67,7 @@ runs:
         echo "status=ok" >> $GITHUB_OUTPUT
 
     - name: Validate environment
-      id: validate_environ
+      id: validate-environ
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
@@ -87,7 +87,7 @@ runs:
         echo "message=$MESSAGE" >> $GITHUB_OUTPUT
 
     - name: Validate branches
-      id: validate_branches
+      id: validate-branches
       if: steps.detect.outcome == 'success'
       shell: bash
       run: |
@@ -105,11 +105,11 @@ runs:
         echo "message=$MESSAGE" >> $GITHUB_OUTPUT
 
     - name: Create or update Pull Request
-      id: create_pr
+      id: create-pr
       if: |
         steps.detect.outcome == 'success' &&
-        steps.validate_environ.outputs.status == 'ok' &&
-        steps.validate_branches.outputs.status == 'ok'
+        steps.validate-environ.outputs.status == 'ok' &&
+        steps.validate-branches.outputs.status == 'ok'
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
@@ -215,8 +215,8 @@ runs:
         fi
 
         # Set all outputs in one place
-        echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-        echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+        echo "pr-number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+        echo "pr-url=$PR_URL" >> "$GITHUB_OUTPUT"
         echo "operation=$OPERATION" >> "$GITHUB_OUTPUT"
 
         # Display unified success message
@@ -233,16 +233,16 @@ runs:
         esac
 
     - name: Set PR labels
-      id: set_labels
+      id: set-labels
       if: |
         steps.detect.outcome == 'success' &&
-        steps.validate_environ.outputs.status == 'ok' &&
-        steps.validate_branches.outputs.status == 'ok'
+        steps.validate-environ.outputs.status == 'ok' &&
+        steps.validate-branches.outputs.status == 'ok'
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        PR_NUMBER="${{ steps.create_pr.outputs.pr_number }}"
+        PR_NUMBER="${{ steps.create-pr.outputs.pr-number }}"
 
         # Add labels if provided
         if [ -n "${{ inputs.labels }}" ]; then
@@ -279,17 +279,17 @@ runs:
         fi
 
     - name: Enable auto-merge
-      id: enable_automerge
+      id: enable-automerge
       if: |
         steps.detect.outcome == 'success' &&
-        steps.validate_environ.outputs.status == 'ok' &&
-        steps.validate_branches.outputs.status == 'ok' &&
+        steps.validate-environ.outputs.status == 'ok' &&
+        steps.validate-branches.outputs.status == 'ok' &&
         inputs.merge-method != 'never'
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        PR_NUMBER="${{ steps.create_pr.outputs.pr_number }}"
+        PR_NUMBER="${{ steps.create-pr.outputs.pr-number }}"
 
         # Enable auto-merge with specified method
         # Timeout after 60 seconds
