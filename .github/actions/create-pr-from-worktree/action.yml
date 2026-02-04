@@ -49,6 +49,11 @@ outputs:
 runs:
   using: composite
   steps:
+    #    - name: Validate runner environment
+    #      id: validate-environment
+    #      uses: aglabo/.github/.github/actions/validate-environment@r1.2.0
+    #      with:
+    #        additional-apps: "gh|gh|regex:version ([0-9.]+)|2.0"
     - name: Detect base branch
       id: detect
       shell: bash
@@ -66,49 +71,30 @@ runs:
         echo "base-branch=$BASE_BRANCH" >> $GITHUB_OUTPUT
         echo "status=ok" >> $GITHUB_OUTPUT
 
-    - name: Validate environment
-      id: validate-environ
+    - name: Validate API rate limit
+      id: validate-ratelimit
+      if: steps.detect.outcome == 'success'
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
-      run: |
-        OUTPUT=$(bash ${{ github.action_path }}/scripts/validate-environ.sh)
-        echo "$OUTPUT"
-
-        # Extract EXIT_STATUS line
-        STATUS_LINE=$(echo "$OUTPUT" | grep "^EXIT_STATUS=" | head -1)
-
-        # Extract status (ok|fail|error|warning)
-        STATUS=$(echo "$STATUS_LINE" | cut -d= -f2 | cut -d: -f1)
-        echo "status=$STATUS" >> $GITHUB_OUTPUT
-
-        # Extract message
-        MESSAGE=$(echo "$STATUS_LINE" | cut -d= -f2 | cut -d: -f2-)
-        echo "message=$MESSAGE" >> $GITHUB_OUTPUT
+      run: bash ${{ github.action_path }}/scripts/validate-ratelimit.sh
 
     - name: Validate branches
       id: validate-branches
-      if: steps.detect.outcome == 'success'
+      if: |
+        steps.detect.outcome == 'success' &&
+        steps.validate-ratelimit.outputs.status == 'ok'
       shell: bash
       run: |
-        OUTPUT=$(bash ${{ github.action_path }}/scripts/validate-branches.sh \
+        bash ${{ github.action_path }}/scripts/validate-branches.sh \
           "${{ steps.detect.outputs.base-branch }}" \
-          "${{ inputs.pr-branch }}")
-        echo "$OUTPUT"
-
-        # Extract EXIT_STATUS
-        STATUS_LINE=$(echo "$OUTPUT" | grep "^EXIT_STATUS=" | head -1)
-        STATUS=$(echo "$STATUS_LINE" | cut -d= -f2 | cut -d: -f1)
-        echo "status=$STATUS" >> $GITHUB_OUTPUT
-
-        MESSAGE=$(echo "$STATUS_LINE" | cut -d= -f2 | cut -d: -f2-)
-        echo "message=$MESSAGE" >> $GITHUB_OUTPUT
+          "${{ inputs.pr-branch }}"
 
     - name: Create or update Pull Request
       id: create-pr
       if: |
         steps.detect.outcome == 'success' &&
-        steps.validate-environ.outputs.status == 'ok' &&
+        steps.validate-ratelimit.outputs.status == 'ok' &&
         steps.validate-branches.outputs.status == 'ok'
       shell: bash
       env:
@@ -236,7 +222,7 @@ runs:
       id: set-labels
       if: |
         steps.detect.outcome == 'success' &&
-        steps.validate-environ.outputs.status == 'ok' &&
+        steps.validate-ratelimit.outputs.status == 'ok' &&
         steps.validate-branches.outputs.status == 'ok'
       shell: bash
       env:
@@ -282,7 +268,7 @@ runs:
       id: enable-automerge
       if: |
         steps.detect.outcome == 'success' &&
-        steps.validate-environ.outputs.status == 'ok' &&
+        steps.validate-ratelimit.outputs.status == 'ok' &&
         steps.validate-branches.outputs.status == 'ok' &&
         inputs.merge-method != 'never'
       shell: bash
