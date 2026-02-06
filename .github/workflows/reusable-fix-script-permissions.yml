@@ -291,7 +291,7 @@ jobs:
             if git update-index --chmod=+x "$file"; then
               echo " > Added +x to: $file"
               # Stage the file to include permission change in commit
-              git add "$file"
+
               applied_count=$((applied_count + 1))
             else
               echo "::error::Failed to add +x to: $file"
