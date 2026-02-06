@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # src: ./.github/actions/validate-environment/scripts/validate-apps.sh
-# @(#) : Validate required applications (Git, curl, gh CLI)
+# @(#) : Validate required applications (Git, curl, gh CLI, etc.)
 #
 # Copyright (c) 2026- aglabo <https://github.com/aglabo>
 #
