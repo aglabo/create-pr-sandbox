@@ -35,7 +35,7 @@ jobs:
       contents: write
       pull-requests: write
       id-token: write
-    uses: aglabo/create-pr-worktree/.github/workflows/reusable-fix-script-permissions.yml@v0.1.0
+    uses: ./.github/workflows/reusable-fix-script-permissions.yml
     with:
       files-pattern: "**/*.sh"
       files-ignore-pattern: "node_modules/**\n.git/**\nvendor/**"
