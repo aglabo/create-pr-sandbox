@@ -206,8 +206,6 @@ jobs:
           for file in $changed_files; do
             [ -z "$file" ] && continue
 
-            echo "Checking file: $file"
-
             # Check if file has shebang
             if [ ! -f "$file" ]; then
               echo "::warning::File not found: $file (skipped)"
@@ -221,6 +219,8 @@ jobs:
 
             # Get git index mode (100644 = normal, 100755 = executable)
             mode=$(git ls-files --stage "$file" 2>/dev/null | awk '{print $1}')
+
+            echo "Checking $file -- $mode""
 
             if [ -z "$mode" ]; then
               echo "::warning::File not in git index: $file (skipped)"
