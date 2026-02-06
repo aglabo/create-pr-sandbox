@@ -31,6 +31,11 @@ on:
         required: false
         default: "fix-permissions"
         type: string
+      debug-base-sha:
+        description: "DEBUG: Base SHA to compare against (if empty, uses default changed-files behavior)"
+        required: false
+        default: ""
+        type: string
 
     outputs:
       status:
@@ -173,14 +178,16 @@ jobs:
       # ============================================
       # Shell Script Detection
       # Purpose: Identify shell scripts modified in current commit/push
+      # DEBUG: When debug-base-sha input is provided, compare against that SHA
       # ============================================
       - name: Detect changed shell scripts using tj-actions/changed-files
         id: changed-scripts
         uses: tj-actions/changed-files@e0021407031f5be11a464abee9a0776171c79891 # v47.0.1 - CVE-2025-30066 patched
         with:
+          base_sha: ${{ inputs.debug-base-sha }}
           files: ${{ steps.vars.outputs.files-pattern }}
           files_ignore: ${{ steps.vars.outputs.files-ignore-pattern }}
-          separator: "\n"
+          separator: " "
 
       # ============================================
       # Permission Filtering
