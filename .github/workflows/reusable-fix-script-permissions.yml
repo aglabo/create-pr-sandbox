@@ -307,6 +307,8 @@ jobs:
           echo ""
           echo "Committing changes..."
 
+          git status
+
           # Build commit message with file list
           git commit -m "$(cat <<'COMMIT_MSG'
           fix: add execute permissions to shell scripts
