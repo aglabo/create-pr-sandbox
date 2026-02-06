@@ -254,8 +254,6 @@ handle_fetch_error() {
     echo "message=${message}"
   } >> "$GITHUB_OUTPUT"
 
-  echo "Output: status=error, message=${message}"
-  echo ""
   echo "=== Rate limit validation failed ==="
   exit "$EXIT_ERROR"
 }
@@ -287,8 +285,6 @@ handle_parse_error() {
     echo "message=${message}"
   } >> "$GITHUB_OUTPUT"
 
-  echo "Output: status=error, message=${message}"
-  echo ""
   echo "=== Rate limit validation failed ==="
   exit "$EXIT_ERROR"
 }
@@ -379,7 +375,7 @@ write_output_and_exit() {
     echo "message=${message}"
   } >> "$GITHUB_OUTPUT"
 
-  echo "Output: status=${status}, message=${message}"
+  echo "Rate limit status: ${status}"
   echo ""
 
   # Display summary and exit
