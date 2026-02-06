@@ -151,9 +151,8 @@ jobs:
           # FORMAT: worktree/{sanitized_pr_branch}
           # DESIGN: Replace slashes with hyphens to avoid deep directory hierarchies
           sanitized_pr_branch="${pr_branch//\//-}"
-          worktree_dir="${RUNNER_TEMP}/worktree/${sanitized_pr_branch}"
-          worktree_parent=$(dirname "$worktree_dir")
-          mkdir -p "$worktree_parent"
+          mkdir -p "${RUNNER_TEMP}/.worktree"
+          worktree_dir=".worktree/${sanitized_pr_branch}"
 
           # ============================================
           # GITHUB_OUTPUT Block
