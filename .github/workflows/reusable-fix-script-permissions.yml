@@ -152,7 +152,6 @@ jobs:
           # DESIGN: Replace slashes with hyphens to avoid deep directory hierarchies
           sanitized_pr_branch="${pr_branch//\//-}"
           worktree_dir="worktree/${sanitized_pr_branch}"
-          mkdir -p "${runner-temp}/worktree"
 
           # ============================================
           # GITHUB_OUTPUT Block
