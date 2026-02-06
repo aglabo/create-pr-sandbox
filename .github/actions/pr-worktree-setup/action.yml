@@ -81,6 +81,7 @@ runs:
 
         # Validate parent directory exists and is writable
         PARENT_DIR=$(dirname "${WORKTREE_DIR}")
+        mkdir -p "${PARENT_DIR}"
         if [ ! -d "${PARENT_DIR}" ]; then
           echo "::error::Parent directory does not exist: ${PARENT_DIR}"
           echo "::error::Cannot create worktree - parent directory must exist first"
