@@ -131,7 +131,7 @@ runs:
         EXPECTED_ARCHITECTURE: ${{ inputs.architecture }}
       run: |
         set -euo pipefail
-        bash"${GITHUB_ACTION_PATH}/scripts/validate-git-runner.sh"
+        bash "${GITHUB_ACTION_PATH}/scripts/validate-git-runner.sh"
       # Outputs: status, message (written to $GITHUB_OUTPUT by script)
 
     - name: "Validate required applications"
