@@ -61,7 +61,7 @@ defaults:
 
 jobs:
   validate-permissions:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       status: ${{ steps.set-status.outputs.status }}
