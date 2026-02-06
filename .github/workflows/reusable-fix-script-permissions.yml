@@ -287,9 +287,11 @@ jobs:
               continue
             fi
 
-            # Apply permission using git index
+            # Apply permission using git index and stage the change
             if git update-index --chmod=+x "$file"; then
               echo " > Added +x to: $file"
+              # Stage the file to include permission change in commit
+              git add "$file"
               applied_count=$((applied_count + 1))
             else
               echo "::error::Failed to add +x to: $file"
@@ -304,7 +306,6 @@ jobs:
           # Commit changes
           echo ""
           echo "Committing changes..."
-          git add .
 
           # Build commit message with file list
           git commit -m "$(cat <<'COMMIT_MSG'
