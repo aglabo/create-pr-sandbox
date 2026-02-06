@@ -251,7 +251,9 @@ handle_fetch_error() {
   # Write to GITHUB_OUTPUT
   {
     echo "status=error"
-    echo "message=${message}"
+    echo "message<<EOF"
+    echo "${message}"
+    echo "EOF"
   } >> "$GITHUB_OUTPUT"
 
   echo "=== Rate limit validation failed ==="
@@ -282,7 +284,9 @@ handle_parse_error() {
   # Write to GITHUB_OUTPUT
   {
     echo "status=error"
-    echo "message=${message}"
+    echo "message<<EOF"
+    echo "${message}"
+    echo "EOF"
   } >> "$GITHUB_OUTPUT"
 
   echo "=== Rate limit validation failed ==="
@@ -372,7 +376,9 @@ write_output_and_exit() {
   # Write to GITHUB_OUTPUT
   {
     echo "status=${status}"
-    echo "message=${message}"
+    echo "message<<EOF"
+    echo "${message}"
+    echo "EOF"
   } >> "$GITHUB_OUTPUT"
 
   echo "Rate limit status: ${status}"
