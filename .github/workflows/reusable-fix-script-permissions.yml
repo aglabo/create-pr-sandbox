@@ -356,14 +356,15 @@ jobs:
             formatted_list="${formatted_list}- ${file}\n"
           done <<< "$scripts"
 
-          echo "Formatted file list:"
-          echo -e "$formatted_list
-
           {
             echo "formatted-scripts<<EOF"
             echo -e "$formatted_list"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
+
+            echo "formatted-scripts<<EOF"
+            echo -e "$formatted_list"
+            echo "EOF"
 
       # ============================================
       # Pull Request Creation (create-pr-from-worktree action)
