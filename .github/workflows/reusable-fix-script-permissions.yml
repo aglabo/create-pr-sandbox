@@ -394,15 +394,8 @@ jobs:
             - **Triggered by**: ${{ github.event_name }} on ${{ github.ref_name }}
             - **Commit SHA**: ${{ github.sha }}
 
-            ## Testing Checklist
-            - [ ] Verify all listed scripts now have execute permission (`git ls-files --stage`)
-            - [ ] Confirm no unintended files were modified
-            - [ ] Check CI/CD passes after merge
-
             ---
             Automated PR created by [create-pr-worktree](https://github.com/aglabo/create-pr-worktree)
-
-            **Signed Commits**: All commits are signed with Sigstore keyless signing (gitsign)
           labels: "fix, automation, permissions"
           merge-method: ${{ inputs.merge-method }}
 
