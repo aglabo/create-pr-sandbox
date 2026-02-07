@@ -92,7 +92,7 @@ jobs:
 
       - name: Initialize worktree with gitsign
         id: setup
-        uses: ./.github/actions/pr-worktree-setup
+        uses: aglabo/create-pr-sandbox/.github/actions/pr-worktree-setup@v0.0.1
         with:
           branch-name: ${{ steps.vars.outputs.PR_BRANCH }}
           worktree-dir: ${{ steps.vars.outputs.worktree-dir }}
@@ -133,4 +133,4 @@ jobs:
       - name: cleanup worktree
         id: cleanup
         if: always()
-        uses: ./.github/actions/pr-worktree-cleanup
+        uses: aglabo/create-pr-sandbox/.github/actions/pr-worktree-cleanup@v0.0.1
