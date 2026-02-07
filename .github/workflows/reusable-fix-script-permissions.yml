@@ -327,19 +327,11 @@ jobs:
           COMMIT_MSG
           )"
 
-          # Push to remote
+          # Push to remote (force-with-lease works for both new and existing branches)
           echo ""
           echo "Pushing to remote..."
           PR_BRANCH="${{ steps.vars.outputs.pr-branch }}"
-
-          # Check if remote branch exists
-          if git ls-remote --exit-code --heads origin "${PR_BRANCH}" >/dev/null 2>&1; then
-            echo "Remote branch exists - appending changes with force push"
-            git push --force-with-lease origin "HEAD:${PR_BRANCH}"
-          else
-            echo "Creating new remote branch"
-            git push -u origin "HEAD:${PR_BRANCH}"
-          fi
+          git push --force-with-lease -u origin "HEAD:${PR_BRANCH}"
 
           echo ""
           echo "✓ Changes committed and pushed to branch: ${PR_BRANCH}"
