@@ -337,6 +337,32 @@ jobs:
           echo "applied-count=$applied_count" >> "$GITHUB_OUTPUT"
 
       # ============================================
+      # Format File List for PR Body
+      # Purpose: Convert plain file list to markdown bullet format
+      # ============================================
+      - name: Format file list for PR display
+        id: format-list
+        if: steps.apply.outcome == 'success'
+        run: |
+          scripts="${{ steps.filter.outputs.scripts }}"
+          formatted_list=""
+
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            formatted_list="${formatted_list}- ${file}\n"
+          done <<< "$scripts"
+
+          {
+            echo "formatted-scripts<<EOF"
+            echo -e "$formatted_list"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+            echo "formatted-scripts<<EOF"
+            echo -e "$formatted_list"
+            echo "EOF"
+
+      # ============================================
       # Pull Request Creation (create-pr-from-worktree action)
       # Purpose: Commit changes with gitsign signature and create/update PR
       # ============================================
@@ -353,9 +379,8 @@ jobs:
 
             ## Changed Files
             Applied `git update-index --chmod=+x` to the following files:
-            ```
-            ${{ steps.filter.outputs.scripts }}
-            ```
+
+            ${{ steps.format-list.outputs.formatted-scripts }}
 
             ## Details
             - **Changed scripts checked**: ${{ steps.changed-scripts.outputs.all_changed_files_count }}
