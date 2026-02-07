@@ -356,6 +356,9 @@ jobs:
             formatted_list="${formatted_list}- ${file}\n"
           done <<< "$scripts"
 
+          echo "Formatted file list:"
+          echo -e "$formatted_list
+
           {
             echo "formatted-scripts<<EOF"
             echo -e "$formatted_list"
